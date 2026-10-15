@@ -277,7 +277,10 @@ namespace Webview2Viewer
                     ExecuteWebviewAction(new Action(async () =>
                     {
                         await webView.ExecuteScriptAsync(
-                            "(function(){var om=document.getElementById('outline-main');if(om){om.innerHTML='" + HttpUtility.JavaScriptStringEncode(currentBody) + "';if(window.buildOutline)window.buildOutline();}else{document.body.innerHTML='" + HttpUtility.JavaScriptStringEncode(currentBody) + "';}})();" +
+                            "(function(){var om=document.getElementById('outline-main');var root=om||document.body;" +
+                            "if(window.clearTypesetMath)window.clearTypesetMath(root);" +
+                            "if(om){om.innerHTML='" + HttpUtility.JavaScriptStringEncode(currentBody) + "';if(window.buildOutline)window.buildOutline();}else{document.body.innerHTML='" + HttpUtility.JavaScriptStringEncode(currentBody) + "';}" +
+                            "if(window.typesetMath)window.typesetMath(root);})();" +
                             "if(typeof mermaid!=='undefined'){mermaid.run();}"
                         );
                         await webView.ExecuteScriptAsync(checkboxToggleScript);

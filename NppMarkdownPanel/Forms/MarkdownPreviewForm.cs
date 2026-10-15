@@ -74,7 +74,41 @@ OUTLINE_SCRIPT_PLACEHOLDER
             </html>
             ";
 
-        const string MATHJAX_HEAD = @"
+        const string MATHJAX_HEAD_LOCAL = @"
+                    <script>
+                    window.MathJax = {
+                        loader: { paths: { fonts: 'http://markdownpanel-assets/mathjax-fonts' } },
+                        output: { font: 'mathjax-stix2' },
+                        tex: {
+                            inlineMath: [['\\(','\\)'], ['$','$']],
+                            displayMath: [['\\[','\\]'], ['$$','$$']],
+                            processEscapes: true
+                        },
+                        startup: { typeset: false }
+                    };
+                    </script>
+                    <script src=""http://markdownpanel-assets/mathjax/tex-chtml.js""></script>
+                    <script>
+                    window.typesetMath = function(root) {
+                        if (!root || !window.MathJax || !MathJax.startup || !MathJax.typesetPromise) return Promise.resolve();
+                        return MathJax.startup.promise
+                            .then(function() { return MathJax.typesetPromise([root]); })
+                            .catch(function(error) { console.error('MathJax typesetting failed:', error); });
+                    };
+                    window.clearTypesetMath = function(root) {
+                        if (root && window.MathJax && MathJax.typesetClear) MathJax.typesetClear([root]);
+                    };
+                    setTimeout(function() {
+                        if (window.MathJax && MathJax.startup && MathJax.typesetPromise) return;
+                        if (window.MathJax && MathJax.loader && MathJax.loader.paths) MathJax.loader.paths.fonts = 'https://cdn.jsdelivr.net/npm/@mathjax';
+                        var s = document.createElement('script');
+                        s.src = 'https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js';
+                        s.onload = function() { if (window.typesetMath) window.typesetMath(document.body); };
+                        document.head.appendChild(s);
+                    }, 3000);
+                    </script>";
+
+        const string MATHJAX_HEAD_CDN = @"
                     <script>
                     window.MathJax = {
                         output: { font: 'mathjax-stix2' },
@@ -311,7 +345,7 @@ OUTLINE_SCRIPT_PLACEHOLDER
             if (!IsValidFileExtension(currentFilePath))
             {
                 var invalidExtensionMessageBody = string.Format(MSG_NO_SUPPORTED_FILE_EXT, Path.GetFileName(filepath), settings.SupportedFileExt);
-                var invalidExtensionMessage = InjectMathRenderer(string.Format(htmlTemplate, Path.GetFileName(filepath), markdownStyleContent, defaultBodyStyle, invalidExtensionMessageBody));
+                var invalidExtensionMessage = InjectMathRenderer(string.Format(htmlTemplate, Path.GetFileName(filepath), markdownStyleContent, defaultBodyStyle, invalidExtensionMessageBody), false);
                 if (settings.ShowOutline)
                     invalidExtensionMessage = InjectOutlineScript(invalidExtensionMessage);
 
@@ -321,9 +355,9 @@ OUTLINE_SCRIPT_PLACEHOLDER
             var resultForBrowser = markdownService.ConvertToHtml(currentText, filepath, true);
             var resultForExport = markdownService.ConvertToHtml(currentText, null, false);
 
-            var markdownHtmlBrowser = InjectMathRenderer(string.Format(htmlTemplate, Path.GetFileName(filepath), markdownStyleContent, defaultBodyStyle, resultForBrowser));
-            var markdownHtmlFileExport = InjectMathRenderer(string.Format(htmlTemplate, Path.GetFileName(filepath), markdownStyleContent, defaultBodyStyle, resultForExport));
-            var markdownHtmlFileExportWithLightTheme = InjectMathRenderer(string.Format(htmlTemplate, Path.GetFileName(filepath), GetCssContent(true), defaultBodyStyle, resultForExport));
+            var markdownHtmlBrowser = InjectMathRenderer(string.Format(htmlTemplate, Path.GetFileName(filepath), markdownStyleContent, defaultBodyStyle, resultForBrowser), false);
+            var markdownHtmlFileExport = InjectMathRenderer(string.Format(htmlTemplate, Path.GetFileName(filepath), markdownStyleContent, defaultBodyStyle, resultForExport), true);
+            var markdownHtmlFileExportWithLightTheme = InjectMathRenderer(string.Format(htmlTemplate, Path.GetFileName(filepath), GetCssContent(true), defaultBodyStyle, resultForExport), true);
 
             if (settings.ShowOutline)
             {
@@ -534,9 +568,9 @@ OUTLINE_SCRIPT_PLACEHOLDER
             return html.Replace("OUTLINE_SCRIPT_PLACEHOLDER", OUTLINE_SCRIPT);
         }
 
-        private static string InjectMathRenderer(string html)
+        private static string InjectMathRenderer(string html, bool forExport)
         {
-            return html.Replace("MATH_RENDERER_HEAD_PLACEHOLDER", MATHJAX_HEAD);
+            return html.Replace("MATH_RENDERER_HEAD_PLACEHOLDER", forExport ? MATHJAX_HEAD_CDN : MATHJAX_HEAD_LOCAL);
         }
 
         private void btnCopyToClipboard_Click(object sender, EventArgs e)

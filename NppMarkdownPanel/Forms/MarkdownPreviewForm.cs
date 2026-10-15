@@ -84,16 +84,27 @@ OUTLINE_SCRIPT_PLACEHOLDER
                             displayMath: [['\\[','\\]'], ['$$','$$']],
                             processEscapes: true
                         },
-                        startup: { typeset: false }
+                        startup: { typeset: true }
                     };
                     </script>
                     <script src=""http://markdownpanel-assets/mathjax/tex-chtml.js""></script>
                     <script>
                     window.typesetMath = function(root) {
-                        if (!root || !window.MathJax || !MathJax.startup || !MathJax.typesetPromise) return Promise.resolve();
-                        return MathJax.startup.promise
-                            .then(function() { return MathJax.typesetPromise([root]); })
-                            .catch(function(error) { console.error('MathJax typesetting failed:', error); });
+                        if (!root) return Promise.resolve();
+                        var tries = 0;
+                        return new Promise(function(resolve) {
+                            (function wait() {
+                                if (window.MathJax && MathJax.startup && MathJax.typesetPromise) {
+                                    MathJax.startup.promise
+                                        .then(function() { return MathJax.typesetPromise([root]); })
+                                        .then(function() { resolve(); })
+                                        .catch(function(error) { console.error('MathJax typesetting failed:', error); resolve(); });
+                                    return;
+                                }
+                                if (++tries > 100) { resolve(); return; }
+                                setTimeout(wait, 100);
+                            })();
+                        });
                     };
                     window.clearTypesetMath = function(root) {
                         if (root && window.MathJax && MathJax.typesetClear) MathJax.typesetClear([root]);
@@ -117,16 +128,27 @@ OUTLINE_SCRIPT_PLACEHOLDER
                             displayMath: [['\\[','\\]'], ['$$','$$']],
                             processEscapes: true
                         },
-                        startup: { typeset: false }
+                        startup: { typeset: true }
                     };
                     </script>
                     <script src=""https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"" onerror=""this.remove();""></script>
                     <script>
                     window.typesetMath = function(root) {
-                        if (!root || !window.MathJax || !MathJax.startup || !MathJax.typesetPromise) return Promise.resolve();
-                        return MathJax.startup.promise
-                            .then(function() { return MathJax.typesetPromise([root]); })
-                            .catch(function(error) { console.error('MathJax typesetting failed:', error); });
+                        if (!root) return Promise.resolve();
+                        var tries = 0;
+                        return new Promise(function(resolve) {
+                            (function wait() {
+                                if (window.MathJax && MathJax.startup && MathJax.typesetPromise) {
+                                    MathJax.startup.promise
+                                        .then(function() { return MathJax.typesetPromise([root]); })
+                                        .then(function() { resolve(); })
+                                        .catch(function(error) { console.error('MathJax typesetting failed:', error); resolve(); });
+                                    return;
+                                }
+                                if (++tries > 100) { resolve(); return; }
+                                setTimeout(wait, 100);
+                            })();
+                        });
                     };
                     window.clearTypesetMath = function(root) {
                         if (root && window.MathJax && MathJax.typesetClear) MathJax.typesetClear([root]);
